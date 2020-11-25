@@ -45,7 +45,7 @@ export default {
         cid: '01',
         state: '1'
       }).then(resp => {
-        if (resp.status === 200 && resp.data.status === 'success') {
+        if (resp.status === 200 && resp.data.status > 0) {
           _this.$message({type: 'success', message: resp.data.msg})
         }
       }).catch((error) => {

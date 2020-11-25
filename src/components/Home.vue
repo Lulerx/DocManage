@@ -4,11 +4,11 @@
       <div class="home_title">文档管理系统</div>
       <div class="home_userinfoContainer">
         <span class="el-dropdown-link home_userinfo" style="margin-right: 10px">
-            <el-avatar :src="currentUserFace"></el-avatar>
+            <el-avatar :src="user.userface"></el-avatar>
           </span>
         <el-dropdown @command="handleCommand">
           <span class="el-dropdown-link home_userinfo">
-            {{ currentUserName }}<i class="el-icon-arrow-down el-icon--right home_userinfo"></i>
+            {{ user.nickname }}<i class="el-icon-arrow-down el-icon--right home_userinfo"></i>
           </span>
           <el-dropdown-menu slot="dropdown">
             <el-dropdown-item command="sysMsg">系统消息</el-dropdown-item>
@@ -52,7 +52,6 @@
             <el-breadcrumb-item :to="{ path: '/home' }">首页</el-breadcrumb-item>
             <el-breadcrumb-item id="toPage" v-text="this.$router.currentRoute.name"></el-breadcrumb-item>
           </el-breadcrumb>
-<!--          <router-view></router-view>-->
           <keep-alive>
             <router-view v-if="this.$route.meta.keepAlive"></router-view>
           </keep-alive>
@@ -65,42 +64,64 @@
 <script>
 
 import {getRequest} from '../utils/api'
+import {postRequest} from '../utils/api'
+import {mapState} from 'vuex'
 
-export default{
+export default {
 
-  mounted : function (){
-    let _this = this;
-    getRequest('/user/getUserMessage').then((resp)=>{
-      _this.currentUserName = resp.data.data.nickname;
-      _this.currentUserFace = resp.data.data.userface;
+  mounted: function () {
+    let _this = this
+    console.log(this.userSession)
+    let auth = this.userSession
+    getRequest('/user/getUserMessage').then((resp) => {
+      _this.user = resp.data.data
+      if (!this.user.authorities.filter((currentValue)=>{currentValue === 'ROLE_超级管理员'})){
+        this.isAdmin = true
+      }
+    })
+  },
+
+  computed: {
+    ...mapState({
+      userSession: state => state.user.userSession
     })
   },
 
   methods: {
-    handleCommand(command) {
-      var _this = this;
+    handleCommand (command) {
+      var _this = this
       if (command == 'logout') {
         this.$confirm('真的要注销登录吗?', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
         }).then(function () {
-          getRequest("/logout")
-          _this.currentUserName = '游客';
-          _this.$router.replace({path: '/'});
+          postRequest('/logout')
+          _this.user.username = '游客'
+          _this.$router.replace({path: '/'})
         }, function () {
           //取消
         })
-      }else if (command == 'MyHome') {
-        this.$router.push('/home/userIndex')
+      } else if (command == 'MyHome') {
+        //this.$router.push('/home/userIndex')
+        this.drawer = true
       }
-    }
+    },
+
   },
 
-  data(){
+  data () {
     return {
-      currentUserName: '游民',
-      currentUserFace:''
+      drawer: false,
+      user: {
+        id: '',
+        username: '未登录',
+        nickname: '',
+        userface:'',
+        authorities: [],
+        email: ''
+      },
+      isAdmin:false
     }
   }
 }

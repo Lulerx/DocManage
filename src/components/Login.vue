@@ -1,6 +1,6 @@
 <template>
   <div id="login">
-    <el-form ref="user" :model="user" label-width="80px">
+    <el-form ref="user" :model="user" v-loading="loading" label-width="80px">
       <h3 style="text-align: center">用户登录</h3><hr style="opacity: 0.5"/>
       <el-form-item prop="username" label="用户名:" :rules="[{required: true, message: '用户名不能为空'}]">
         <el-input v-model="user.username" placeholder="请输入用户名"></el-input>
@@ -39,25 +39,32 @@ export default {
         username: '',
         password: '',
         email: '',
-      }
+      },
+      loading: false
     }
   },
 
   methods: {
     onSubmit() {
+      this.loading = true;
       postRequest("/login",{
         username: this.user.username,
         password: this.user.password
       }).then((resp) =>{
+        this.loading = false;
         if (resp.data.code === 200){
           this.$message({type:'success',message:resp.data.message})
-          this.$router.push({path: '/home/user'})
+          console.log(resp.data.data);
+          this.$store.dispatch('set_userSession', resp.data.data)
+          this.$router.push({path: '/home/edit'})
         }else if (resp.data.code === 401){
           this.$message({type:'error',message:resp.data.message})
         }
-      }).catch((error)=>{
-        if (error.response.status === 401){
-          this.$message({type:'error',message:'用户名或密码不正确哦'})
+      } ,resp=>{
+        this.loading = false;
+        if (resp.response.status === 401){
+          let data = resp.response.data;
+          this.$message({type:'error',message: data.message})
         }else {
           this.$message({type:'error',message:'服务器出错啦~'})
         }
